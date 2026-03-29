@@ -1,0 +1,119 @@
+@startuml Ashesi_Market_ERD
+
+!define TABLE(name,desc) class name as "desc" << (T,#ABEBC6) >>
+!define PK(x) <u>x</u>
+!define FK(x) <i>x</i>
+
+hide methods
+hide stereotypes
+
+skinparam classAttributeIconSize 0
+skinparam class {
+  BackgroundColor #FDFEFE
+  ArrowColor #2C3E50
+  BorderColor #2C3E50
+  HeaderBackgroundColor #1A5276
+  HeaderFontColor #FFFFFF
+}
+
+TABLE(users, "users") {
+  PK(id) : INT AI
+  name : VARCHAR(120)
+  email : VARCHAR(180) UNIQUE
+  password_hash : VARCHAR(255)
+  phone_whatsapp : VARCHAR(20)
+  year_group : VARCHAR(20)
+  bio : TEXT
+  id_image : VARCHAR(255)
+  role : ENUM(buyer|seller|both)
+  is_verified : TINYINT(1)
+  profile_complete : TINYINT(1)
+  avg_rating : DECIMAL(3,2)
+  review_count : INT
+  created_at : TIMESTAMP
+}
+
+TABLE(categories, "categories") {
+  PK(id) : INT AI
+  name : VARCHAR(80)
+  slug : VARCHAR(80) UNIQUE
+}
+
+TABLE(products, "products") {
+  PK(id) : INT AI
+  FK(seller_id) : INT → users.id
+  FK(category_id) : INT → categories.id
+  title : VARCHAR(200)
+  description : TEXT
+  price : DECIMAL(10,2)
+  quantity : INT
+  condition : ENUM(new|like_new|good|fair)
+  location : VARCHAR(120)
+  is_available : TINYINT(1)
+  created_at : TIMESTAMP
+}
+
+TABLE(product_images, "product_images") {
+  PK(id) : INT AI
+  FK(product_id) : INT → products.id
+  image_path : VARCHAR(255)
+  is_primary : TINYINT(1)
+}
+
+TABLE(cart, "cart") {
+  PK(id) : INT AI
+  FK(user_id) : INT → users.id  UNIQUE
+  created_at : TIMESTAMP
+}
+
+TABLE(cart_items, "cart_items") {
+  PK(id) : INT AI
+  FK(cart_id) : INT → cart.id
+  FK(product_id) : INT → products.id
+  quantity : INT
+  -- UNIQUE(cart_id, product_id)
+}
+
+TABLE(orders, "orders") {
+  PK(id) : INT AI
+  FK(buyer_id) : INT → users.id
+  total_amount : DECIMAL(10,2)
+  status : ENUM(pending|confirmed|completed|cancelled)
+  created_at : TIMESTAMP
+}
+
+TABLE(order_items, "order_items") {
+  PK(id) : INT AI
+  FK(order_id) : INT → orders.id
+  FK(product_id) : INT → products.id
+  FK(seller_id) : INT → users.id
+  quantity : INT
+  unit_price : DECIMAL(10,2)
+}
+
+TABLE(reviews, "reviews") {
+  PK(id) : INT AI
+  FK(order_item_id) : INT → order_items.id  UNIQUE
+  FK(reviewer_id) : INT → users.id
+  FK(seller_id) : INT → users.id
+  rating : TINYINT (1–5)
+  comment : TEXT
+  created_at : TIMESTAMP
+}
+
+' Relationships
+users        "1" -- "0..*"  products      : sells
+users        "1" -- "0..1"  cart          : has
+users        "1" -- "0..*"  orders        : places (as buyer)
+categories   "1" -- "0..*"  products      : categorises
+products     "1" -- "0..*"  product_images : has images
+products     "1" -- "0..*"  cart_items    : in cart
+cart         "1" -- "0..*"  cart_items    : contains
+orders       "1" -- "1..*"  order_items   : contains
+products     "1" -- "0..*"  order_items   : ordered as
+users        "1" -- "0..*"  order_items   : sold (as seller_id)
+order_items  "1" -- "0..1"  reviews       : reviewed via
+users        "1" -- "0..*"  reviews       : writes (as reviewer)
+users        "1" -- "0..*"  reviews       : receives (as seller)
+
+@enduml
